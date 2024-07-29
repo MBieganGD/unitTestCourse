@@ -1,5 +1,6 @@
 const unitTestingTask = require("../unitTestingTask");
 const polishLang = require("../lang/pl.js");
+const TimezonedDate = require("timezoned-date");
 
 describe("unitTestingTask Library Additional Tests", () => {
   it("should import the module correctly", () => {
@@ -24,111 +25,53 @@ describe("unitTestingTask Library", () => {
   });
 
   describe("Date Formatting Tokens", () => {
-    const testDate = new Date("2024-07-23T14:35:45.123");
+    let testDate;
 
-    it("should return full year for YYYY", () => {
-      expect(unitTestingTask.tokens.YYYY(testDate)).toBe(2024);
-    });
-    it("YY token should return the last two digits of the year", () => {
-      expect(unitTestingTask.tokens.YY(testDate)).toBe("24");
+    beforeEach(() => {
+      const UtcDate = TimezonedDate.makeConstructor(120);
+      testDate = new UtcDate("2024-07-23T14:35:45.123Z");
     });
 
-    it("MMMM token should return the full month name", () => {
-      expect(unitTestingTask.tokens.MMMM(testDate)).toBe("July");
-    });
+    const testCases = [
+      ["YYYY", 2024],
+      ["YY", "24"],
+      ["MMMM", "July"],
+      ["MMM", "Jul"],
+      ["MM", "07"],
+      ["M", 7],
+      ["DDD", "Tuesday"],
+      ["DD", "Tue"],
+      ["D", "Tu"],
+      ["dd", "23"],
+      ["d", 23],
+      ["HH", "16"],
+      ["H", 16],
+      ["hh", "04"],
+      ["h", 4],
+      ["mm", "35"],
+      ["m", 35],
+      ["ss", "45"],
+      ["s", 45],
+      ["ff", "123"],
+      ["f", 123],
+      ["A", "PM"],
+      ["a", "pm"],
+      ["ZZ", "+0200"],
+      ["Z", "+02:00"],
+    ];
 
-    it("MMM token should return the abbreviated month name", () => {
-      expect(unitTestingTask.tokens.MMM(testDate)).toBe("Jul");
-    });
-
-    it("MM token should return the month with leading zeroes", () => {
-      expect(unitTestingTask.tokens.MM(testDate)).toBe("07");
-    });
-
-    it("M token should return the month without leading zeroes", () => {
-      expect(unitTestingTask.tokens.M(testDate)).toBe(7);
-    });
-
-    it("DDD token should return the full day name", () => {
-      expect(unitTestingTask.tokens.DDD(testDate)).toBe("Tuesday");
-    });
-
-    it("DD token should return the abbreviated day name", () => {
-      expect(unitTestingTask.tokens.DD(testDate)).toBe("Tue");
-    });
-
-    it("D token should return the first two letters of the day name", () => {
-      expect(unitTestingTask.tokens.D(testDate)).toBe("Tu");
-    });
-
-    it("dd token should return the day of the month with leading zeroes", () => {
-      expect(unitTestingTask.tokens.dd(testDate)).toBe("23");
-    });
-
-    it("d token should return the day of the month without leading zeroes", () => {
-      expect(unitTestingTask.tokens.d(testDate)).toBe(23);
-    });
-
-    it("HH token should return the hours with leading zeroes", () => {
-      expect(unitTestingTask.tokens.HH(testDate)).toBe("14");
-    });
-
-    it("H token should return the hours without leading zeroes", () => {
-      expect(unitTestingTask.tokens.H(testDate)).toBe(14);
-    });
-
-    it("hh token should return the 12-hour format hours with leading zeroes", () => {
-      expect(unitTestingTask.tokens.hh(testDate)).toBe("02");
-    });
-
-    it("h token should return the 12-hour format hours without leading zeroes", () => {
-      expect(unitTestingTask.tokens.h(testDate)).toBe(2);
-    });
-
-    it("mm token should return the minutes with leading zeroes", () => {
-      expect(unitTestingTask.tokens.mm(testDate)).toBe("35");
-    });
-
-    it("m token should return the minutes without leading zeroes", () => {
-      expect(unitTestingTask.tokens.m(testDate)).toBe(35);
-    });
-
-    it("ss token should return the seconds with leading zeroes", () => {
-      expect(unitTestingTask.tokens.ss(testDate)).toBe("45");
-    });
-
-    it("s token should return the seconds without leading zeroes", () => {
-      expect(unitTestingTask.tokens.s(testDate)).toBe(45);
-    });
-
-    it("ff token should return the milliseconds with leading zeroes", () => {
-      expect(unitTestingTask.tokens.ff(testDate)).toBe("123");
-    });
-
-    it("f token should return the milliseconds without leading zeroes", () => {
-      expect(unitTestingTask.tokens.f(testDate)).toBe(123);
-    });
-
-    it("A token should return the uppercase meridiem", () => {
-      expect(unitTestingTask.tokens.A(testDate)).toBe("PM");
-    });
-
-    it("a token should return the lowercase meridiem", () => {
-      expect(unitTestingTask.tokens.a(testDate)).toBe("pm");
-    });
-
-    it("ZZ token should return the timezone offset without separator", () => {
-      expect(unitTestingTask.tokens.ZZ(testDate)).toBe("+0200");
-    });
-
-    it("Z token should return the timezone offset with colon separator", () => {
-      expect(unitTestingTask.tokens.Z(testDate)).toBe("+02:00");
+    test.each(testCases)("%s token should return %s", (token, expected) => {
+      expect(unitTestingTask.tokens[token](testDate)).toBe(expected);
     });
   });
 
   describe("unitTestingTask function", () => {
+    let unitTestingTask;
+
     beforeEach(() => {
-      unitTestingTask._formatters = {};
+      jest.isolateModules(() => {
+        unitTestingTask = require("../unitTestingTask");
+      });
     });
 
     it("should throw an TypeError on missing or wrong type of format param", () => {
@@ -171,8 +114,9 @@ describe("unitTestingTask Library", () => {
     const formattedDate = unitTestingTask.unitTestingTask("YYYY-MM-dd");
 
     const expectedDate = `${currentDate.getFullYear()}-${unitTestingTask.leadingZeroes(
-      currentDate.getMonth() + 1
-    )}-${unitTestingTask.leadingZeroes(currentDate.getDate())}`;
+      currentDate.getMonth() + 1,
+      2
+    )}-${unitTestingTask.leadingZeroes(currentDate.getDate(), 2)}`;
     expect(formattedDate).toBe(expectedDate);
   });
 
@@ -274,77 +218,25 @@ describe("unitTestingTask Library", () => {
 
   describe("unitTestingTask.formatters", () => {
     it("should return the list of custom formats", () => {
-      unitTestingTask._formatters = {
-        ISODate: () => {},
-        ISOTime: () => {},
-        ISODateTime: () => {},
-        ISODateTimeTZ: () => {},
-        customFormat: () => {},
-      };
+      jest.isolateModules(() => {
+        const unitTestingTask = require("../unitTestingTask");
 
-      const expectedFormats = [
-        "ISODate",
-        "ISOTime",
-        "ISODateTime",
-        "ISODateTimeTZ",
-        "customFormat",
-      ];
+        unitTestingTask.register("ISODate", () => {});
+        unitTestingTask.register("ISOTime", () => {});
+        unitTestingTask.register("ISODateTime", () => {});
+        unitTestingTask.register("ISODateTimeTZ", () => {});
+        unitTestingTask.register("customFormat", () => {});
 
-      expect(unitTestingTask.formatters()).toEqual(expectedFormats);
-    });
-  });
+        const expectedFormats = [
+          "ISODate",
+          "ISOTime",
+          "ISODateTime",
+          "ISODateTimeTZ",
+          "customFormat",
+        ];
 
-  describe("unitTestingTask.noConflict", () => {
-    it("should restore the previous unitTestingTask and return the current unitTestingTask", () => {
-      const root = {};
-      const prevDate = "previousDate";
-      global.root = root;
-      global.prevDate = prevDate;
-
-      const unitTestingTask = {
-        noConflict: function () {
-          root.unitTestingTask = prevDate;
-          return this;
-        },
-      };
-
-      const result = unitTestingTask.noConflict();
-
-      expect(root.unitTestingTask).toBe(prevDate);
-
-      expect(result).toBe(unitTestingTask);
-    });
-  });
-
-  describe("unitTestingTask.noConflict", () => {
-    let originalUnitTestingTask;
-    let unitTestingTask;
-    let prevDate;
-
-    beforeEach(() => {
-      originalUnitTestingTask = global.unitTestingTask;
-      prevDate = "previousValue";
-      global.unitTestingTask = "currentValue";
-
-      unitTestingTask = function () {};
-      unitTestingTask.noConflict = function () {
-        global.unitTestingTask = prevDate;
-        return this;
-      };
-    });
-
-    afterEach(() => {
-      global.unitTestingTask = originalUnitTestingTask;
-    });
-
-    it("should restore the previous value of window.unitTestingTask", () => {
-      unitTestingTask.noConflict();
-      expect(global.unitTestingTask).toBe(prevDate);
-    });
-
-    it("should return the unitTestingTask function itself", () => {
-      const result = unitTestingTask.noConflict();
-      expect(result).toBe(unitTestingTask);
+        expect(unitTestingTask.formatters()).toEqual(expectedFormats);
+      });
     });
   });
 });
